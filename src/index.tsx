@@ -56,6 +56,7 @@ style(`
 export interface MaskProps {
     open?: boolean;
     children?: React.ReactNode;
+    className?: string
 }
 
 
@@ -66,6 +67,8 @@ function getContent() {
 let stack: string[] = [];
 const evt = new EventTarget();
 
+type DefaultRender<P> = React.ReactElement | ((state: P | undefined, props: MaskProps) => React.ReactElement)
+
 function useFullMask(): [
     React.ReactElement,
     React.Dispatch<React.SetStateAction<MaskProps>>,
@@ -73,7 +76,7 @@ function useFullMask(): [
 ];
 
 function useFullMask<P>(
-    jsx: React.ReactElement,
+    defaultRender: DefaultRender<P>,
     config?: Omit<MaskProps, "children">
 ): [
     React.ReactElement,
@@ -84,12 +87,12 @@ function useFullMask<P>(
 /**
  * 全局的页面上的蒙层
  */
-function useFullMask(
-    jsx?: React.ReactElement,
+function useFullMask<S>(
+    defaultRender?: DefaultRender<S>,
     config?: Omit<MaskProps, "children">
 ) {
     const idRef = useRef<string>(guid());
-    const [props, setProps] = useState<MaskProps>({
+    const [props, setProps] = useState<MaskProps & { state?: S }>({
         open: false,
         ...config,
     });
@@ -110,7 +113,7 @@ function useFullMask(
     }, []);
 
     const ref = React.useRef<HTMLDivElement>(null);
-    const {open, ...rest} = props;
+    const {open, state, ...rest} = props;
     const mask =
         content &&
         createPortal(
@@ -119,10 +122,18 @@ function useFullMask(
                     ref={ref}
                     className={classNames(
                         `${PREFIX_ID}-full`,
+                        props.className,
                         latest === idRef.current && CLASS_LATEST
                     )}
                 >
-                    {jsx ? React.cloneElement(jsx, {...rest}) : props.children}
+                    {
+                        props.children ||
+                        defaultRender && (
+                            typeof defaultRender === "function" ?
+                                defaultRender(state, {open, ...rest})
+                                : React.cloneElement(defaultRender, {...rest})
+                        )
+                    }
                 </div>
             ),
             content
