@@ -6,13 +6,16 @@ import useFullMask from "../src";
 
 function App() {
     const [count, setCount] = useState(0);
-    const [ele, update] = useFullMask(<div>123</div>)
+    const [ele, update] = useFullMask<{ id: number }>((state, props) => {
+        console.log('state', state, props);
+        return <div>123</div>
+    })
     return (
         <>
             {ele}
             <button
                 onClick={() => {
-                    update({open: true})
+                    update({open: true, id: 789})
                 }}
             >
                 打开弹窗

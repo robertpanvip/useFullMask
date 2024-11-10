@@ -27,7 +27,11 @@ const CLASS_LATEST = `is-latest-${uid}`;
 
 const STACK_CHANGE = `stack-change-${uid}`;
 
-function style(cssText: string) {
+function getContent() {
+    return document.querySelector(`#${FULL_MASK_ID}`)! || document.body;
+}
+
+function injectStyle(cssText: string) {
     const id = document.head.querySelector(`#${STYLE_ID}`);
     if (!id) {
         const style = document.createElement("style");
@@ -37,7 +41,7 @@ function style(cssText: string) {
     }
 }
 
-style(`
+injectStyle(`
 .${PREFIX_ID}-full {
   background: #F5F6FA;
   width: 100%;
@@ -60,14 +64,10 @@ export interface MaskProps {
 }
 
 
-function getContent() {
-    return document.querySelector(`#${FULL_MASK_ID}`)! || document.body;
-}
-
 let stack: string[] = [];
 const evt = new EventTarget();
 
-type DefaultRender<P> = React.ReactElement | ((state: P | undefined, props: MaskProps) => React.ReactElement)
+export type DefaultRender<P> = React.ReactElement | ((state: P, props: MaskProps) => React.ReactElement)
 
 function useFullMask(): [
     React.ReactElement,
@@ -80,7 +80,7 @@ function useFullMask<P>(
     config?: Omit<MaskProps, "children">
 ): [
     React.ReactElement,
-    React.Dispatch<React.SetStateAction<P & MaskProps>>,
+    React.Dispatch<React.SetStateAction<Partial<P> & MaskProps>>,
     MaskProps
 ];
 /**全局的页面上的蒙层
@@ -145,8 +145,8 @@ function useFullMask<S>(
                         props.children ||
                         defaultRender && (
                             typeof defaultRender === "function" ?
-                                defaultRender(state, {open, ...rest})
-                                : React.cloneElement(defaultRender, {...rest})
+                                defaultRender(state!, {open, ...rest})
+                                : React.cloneElement(defaultRender, {...rest, ...state})
                         )
                     }
                 </div>
@@ -166,25 +166,18 @@ function useFullMask<S>(
 
     const updateMaskProps = useCallback(
         (stateAction: React.SetStateAction<MaskProps>) => {
-            if (typeof stateAction == "function") {
-                setProps((prevState) => {
-                    const _props = stateAction(prevState);
-                    watchOpen(_props);
-                    return {..._props};
-                });
-            } else {
-                watchOpen({...props, ...stateAction});
-                setProps({...props, ...stateAction});
-            }
+            setProps((prevState) => {
+                const _props = typeof stateAction == "function" ? stateAction(prevState) : {...prevState, ...stateAction};
+                watchOpen(_props);
+                return {..._props};
+            });
         },
-        []
+        [watchOpen]
     );
 
-    useLayoutEffect(() => {
-        return () => {
-            watchOpen({open: false});
-        };
-    }, []);
+    useLayoutEffect(() => () => {
+        watchOpen({open: false});
+    }, [watchOpen]);
 
     return [mask, updateMaskProps, props] as [
         React.ReactElement,
