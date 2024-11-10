@@ -83,9 +83,24 @@ function useFullMask<P>(
     React.Dispatch<React.SetStateAction<P & MaskProps>>,
     MaskProps
 ];
-
-/**
- * 全局的页面上的蒙层
+/**全局的页面上的蒙层
+ * useFullMask 自定义 Hook，用于管理遮罩层（Mask）的渲染和状态控制。
+ *
+ * 重载 1:
+ * - 无参数调用时，提供基本的遮罩层元素、状态更新函数和初始的遮罩层属性。
+ *
+ * 重载 2:
+ * - 可以通过 `defaultRender` 自定义遮罩层内容，并可选择性提供遮罩层的配置 `config`。
+ *
+ * @template P - 自定义渲染函数所需的属性类型。
+ *
+ * @param defaultRender - 自定义遮罩层渲染函数，接收类型 `P` 的参数，返回遮罩层内容的 React 元素。
+ * @param config - 遮罩层的默认配置，类型为 `MaskProps`（不包括 `children` 属性）。
+ *
+ * @returns
+ * - `[0]`: `React.ReactElement` - 遮罩层的 React 元素。
+ * - `[1]`: `React.Dispatch<React.SetStateAction<P & MaskProps>>` - 设置遮罩层状态的函数。
+ * - `[2]`: `MaskProps` - 遮罩层的当前属性配置。
  */
 function useFullMask<S>(
     defaultRender?: DefaultRender<S>,
